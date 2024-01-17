@@ -1,7 +1,7 @@
 # flysystem-ssh-shell
 
 Flysystem adapter for SSH shell.
- 
+
 ### Installation
 
 ```bash
@@ -53,7 +53,7 @@ $configurator = (new \Phuxtil\Flysystem\SshShell\SshShellConfigurator())
 ```
 _Note: This is the default setting._
 
-#### via ssh private key 
+#### via ssh private key
 
 ```php
 $configurator = (new \Phuxtil\Flysystem\SshShell\SshShellConfigurator())
@@ -97,12 +97,12 @@ $filesystem = new Filesystem($adapter);
 Default root directory on remote host is `/tmp/remote_fs`.
 
 Available parameters:
-- `TESTS_SSH_USER` 
+- `TESTS_SSH_USER`
 - `TESTS_SSH_HOST`
 - `TEST_SSH_PORT` (optional, default 22)
 
 Run tests with:
 
 ```shell
-TESTS_SSH_USER=... TESTS_SSH_HOST=... vendor/bin/phpunit --group acceptance
+TESTS_SSH_USER=root TESTS_SSH_HOST=data-container vendor/bin/phpunit --group acceptance
 ``` 
