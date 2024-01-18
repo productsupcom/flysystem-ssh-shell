@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace TestsPhuxtilFlysystemSshShell\Acceptance\Adapter;
 
 use League\Flysystem\Config;
+use League\Flysystem\UnableToCopyFile;
+use League\Flysystem\UnableToMoveFile;
+use League\Flysystem\UnableToWriteFile;
 use League\Flysystem\Visibility;
 use TestsPhuxtilFlysystemSshShell\Helper\AbstractTestCase;
 
@@ -25,17 +28,8 @@ class AdapterWriterTest extends AbstractTestCase
         $config = new Config();
         $config->extend(['visibility' => Visibility::PRIVATE]);
 
-        $result = $adapter->write(static::REMOTE_NEWPATH_NAME, 'FooBaroo', $config);
+        $adapter->write(static::REMOTE_NEWPATH_NAME, 'FooBaroo', $config);
 
-        $expected = [
-            'contents' => 'FooBaroo',
-            'type' => 'file',
-            'size' => strlen('FooBaroo'),
-            'path' => static::REMOTE_NEWPATH_NAME,
-            'visibility' => Visibility::PRIVATE,
-        ];
-
-        $this->assertEquals($expected, $result);
         $this->assertEquals('FooBaroo', \file_get_contents(static::REMOTE_NEWPATH_FILE));
         $this->assertFileExists(static::REMOTE_NEWPATH_FILE);
     }
@@ -47,16 +41,8 @@ class AdapterWriterTest extends AbstractTestCase
         );
 
         $config = new Config();
-        $result = $adapter->write(static::REMOTE_NEWPATH_NAME, 'FooBaroo', $config);
+        $adapter->write(static::REMOTE_NEWPATH_NAME, 'FooBaroo', $config);
 
-        $expected = [
-            'contents' => 'FooBaroo',
-            'type' => 'file',
-            'size' => strlen('FooBaroo'),
-            'path' => static::REMOTE_NEWPATH_NAME,
-        ];
-
-        $this->assertEquals($expected, $result);
         $this->assertEquals('FooBaroo', \file_get_contents(static::REMOTE_NEWPATH_FILE));
         $this->assertFileExists(static::REMOTE_NEWPATH_FILE);
     }
@@ -70,31 +56,22 @@ class AdapterWriterTest extends AbstractTestCase
         );
 
         $config = new Config();
-        $result = $adapter->write(static::REMOTE_NEWPATH_NAME, 'FooBaroo', $config);
+        $adapter->write(static::REMOTE_NEWPATH_NAME, 'FooBaroo', $config);
 
-        $expected = [
-            'contents' => 'FooBaroo',
-            'type' => 'file',
-            'size' => strlen('FooBaroo'),
-            'path' => static::REMOTE_NEWPATH_NAME,
-        ];
-
-        $this->assertEquals($expected, $result);
         $this->assertEquals('FooBaroo', \file_get_contents(static::REMOTE_NEWPATH_FILE));
         $this->assertFileExists(static::REMOTE_NEWPATH_FILE);
     }
 
-    public function testWriteShouldReturnFalse()
+    public function testWriteShouldThrowException()
     {
+        $this->expectException(UnableToWriteFile::class);
         $this->configurator->setPort(0);
         $adapter = $this->factory->createAdapter(
             $this->configurator
         );
 
         $config = new Config();
-        $result = $adapter->write(static::REMOTE_NEWPATH_NAME, 'FooBaroo', $config);
-
-        $this->assertFalse($result);
+        $adapter->write(static::REMOTE_NEWPATH_NAME, 'FooBaroo', $config);
     }
 
     public function testUpdateShouldNotChangeMeta()
@@ -106,16 +83,8 @@ class AdapterWriterTest extends AbstractTestCase
         );
 
         $config = new Config();
-        $result = $adapter->update(static::REMOTE_NAME, 'FooBaroo', $config);
+        $adapter->write(static::REMOTE_NAME, 'FooBaroo', $config);
 
-        $expected = [
-            'contents' => 'FooBaroo',
-            'type' => 'file',
-            'size' => strlen('FooBaroo'),
-            'path' => static::REMOTE_NAME,
-        ];
-
-        $this->assertEquals($expected, $result);
         $this->assertEquals('FooBaroo', \file_get_contents(static::REMOTE_FILE));
         $this->assertFileExists(static::REMOTE_FILE);
     }
@@ -130,34 +99,21 @@ class AdapterWriterTest extends AbstractTestCase
 
         $config = new Config();
         $config->extend(['visibility' => Visibility::PRIVATE]);
-        $result = $adapter->update(static::REMOTE_NAME, 'FooBaroo', $config);
-
-        $expected = [
-            'contents' => 'FooBaroo',
-            'type' => 'file',
-            'size' => strlen('FooBaroo'),
-            'path' => static::REMOTE_NAME,
-            'visibility' => Visibility::PRIVATE,
-        ];
-
-        $this->assertEquals($expected, $result);
+        $adapter->write(static::REMOTE_NAME, 'FooBaroo', $config);
         $this->assertEquals('FooBaroo', \file_get_contents(static::REMOTE_FILE));
         $this->assertFileExists(static::REMOTE_FILE);
     }
 
-    public function testUpdateShouldReturnFalseWhenPathDoesNotExist()
+    public function testUpdateShouldThrowExceptionWhenPathDoesNotExist()
     {
-        $this->assertFileDoesNotExist(static::REMOTE_INVALID_PATH);
+        $this->expectException(UnableToWriteFile::class);
 
         $adapter = $this->factory->createAdapter(
             $this->configurator
         );
 
         $config = new Config();
-        $result = $adapter->update(static::REMOTE_INVALID_NAME, 'FooBaroo', $config);
-
-        $this->assertFalse($result);
-        $this->assertFileDoesNotExist(static::REMOTE_INVALID_PATH);
+        $adapter->write(static::REMOTE_INVALID_NAME, 'FooBaroo', $config);
     }
 
     public function testMkdir()
@@ -167,14 +123,8 @@ class AdapterWriterTest extends AbstractTestCase
         );
 
         $config = new Config();
-        $result = $adapter->createDir('/newpath/', $config);
+        $adapter->createDirectory('/newpath/', $config);
 
-        $expected = [
-            'path' => '/newpath/',
-            'type' => 'dir',
-        ];
-
-        $this->assertEquals($expected, $result);
         $this->assertDirectoryExists(static::REMOTE_NEWPATH);
     }
 
@@ -187,26 +137,20 @@ class AdapterWriterTest extends AbstractTestCase
             $this->configurator
         );
 
-        $result = $adapter->copy(static::REMOTE_NAME, static::REMOTE_NEWPATH_NAME);
-
-        $this->assertTrue($result);
+        $adapter->copy(static::REMOTE_NAME, static::REMOTE_NEWPATH_NAME, new Config());
         $this->assertFileExists(static::REMOTE_NEWPATH_FILE);
     }
 
-    public function testCopyShouldReturnFalseWhenSshCommandFails()
+    public function testCopyShouldThrowExceptionWhenSshCommandFails()
     {
-        $this->setupRemoteFile();
-        $this->assertFileDoesNotExist(static::REMOTE_NEWPATH_FILE);
+        $this->expectException(UnableToCopyFile::class);
 
         $this->configurator->setPort(0);
         $adapter = $this->factory->createAdapter(
             $this->configurator
         );
 
-        $result = $adapter->copy(static::REMOTE_NAME, static::REMOTE_NEWPATH_NAME);
-
-        $this->assertFalse($result);
-        $this->assertFileDoesNotExist(static::REMOTE_NEWPATH_FILE);
+        $adapter->copy(static::REMOTE_NAME, static::REMOTE_NEWPATH_NAME, new Config());
     }
 
     public function testRename()
@@ -221,30 +165,25 @@ class AdapterWriterTest extends AbstractTestCase
             $this->configurator
         );
 
-        $result = $adapter->rename($fileToMoveName, static::REMOTE_NEWPATH_NAME);
+        $adapter->move($fileToMoveName, static::REMOTE_NEWPATH_NAME, new Config());
 
-        $this->assertTrue($result);
         $this->assertFileExists(static::REMOTE_NEWPATH_FILE);
         $this->assertFileDoesNotExist($fileToMove);
     }
 
-    public function testRenameShouldReturnFalseWhenSshProcessFails()
+    public function testRenameShouldThrowExceptionWhenSshProcessFails()
     {
         $fileToMove = $this->setupRemoteTempFile();
         $fileToMoveName = \basename($fileToMove);
 
-        $this->assertFileDoesNotExist(static::REMOTE_NEWPATH_FILE);
+        $this->expectException(UnableToMoveFile::class);
 
         $this->configurator->setPort(0);
         $adapter = $this->factory->createAdapter(
             $this->configurator
         );
 
-        $result = $adapter->rename($fileToMoveName, static::REMOTE_NEWPATH_NAME);
-
-        $this->assertFalse($result);
-        $this->assertFileExists($fileToMove);
-        $this->assertFileDoesNotExist(static::REMOTE_NEWPATH_FILE);
+        $adapter->move($fileToMoveName, static::REMOTE_NEWPATH_NAME, new Config());
     }
 
     public function testDelete()
@@ -256,9 +195,8 @@ class AdapterWriterTest extends AbstractTestCase
             $this->configurator
         );
 
-        $result = $adapter->delete($fileToMoveName);
+        $adapter->delete($fileToMoveName);
 
-        $this->assertTrue($result);
         $this->assertFileDoesNotExist($fileToMoveName);
     }
 
@@ -271,9 +209,7 @@ class AdapterWriterTest extends AbstractTestCase
             $this->configurator
         );
 
-        $result = $adapter->deleteDir($dirName);
-
-        $this->assertTrue($result);
+        $adapter->deleteDirectory($dirName);
         $this->assertDirectoryDoesNotExist($dirName);
     }
 }

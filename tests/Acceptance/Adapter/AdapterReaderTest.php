@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace TestsPhuxtilFlysystemSshShell\Acceptance\Adapter;
 
+use League\Flysystem\UnableToReadFile;
 use League\Flysystem\Visibility;
+use Phuxtil\Flysystem\SshShell\Adapter\SshShellAdapter;
 use Phuxtil\SplFileInfo\VirtualSplFileInfo;
 use TestsPhuxtilFlysystemSshShell\Helper\AbstractTestCase;
 
@@ -16,10 +18,8 @@ use TestsPhuxtilFlysystemSshShell\Helper\AbstractTestCase;
  */
 class AdapterReaderTest extends AbstractTestCase
 {
-    /**
-     * @var \Phuxtil\Flysystem\SshShell\Adapter\SshShellAdapter
-     */
-    protected $adapter;
+
+    protected SshShellAdapter $adapter;
 
     protected function setUp(): void
     {
@@ -87,7 +87,7 @@ class AdapterReaderTest extends AbstractTestCase
     {
         $this->assertEquals(
             \filesize(static::REMOTE_FILE),
-            $this->adapter->getSize(static::REMOTE_NAME)['size']
+            $this->adapter->fileSize(static::REMOTE_NAME)['size']
         );
     }
 
@@ -95,7 +95,7 @@ class AdapterReaderTest extends AbstractTestCase
     {
         $this->assertEquals(
             'text/plain',
-            $this->adapter->getMimetype(static::REMOTE_NAME)['mimetype']
+            $this->adapter->mimeType(static::REMOTE_NAME)['mimetype']
         );
     }
 
@@ -103,7 +103,7 @@ class AdapterReaderTest extends AbstractTestCase
     {
         $this->assertEquals(
             filemtime(static::REMOTE_FILE),
-            $this->adapter->getTimestamp(static::REMOTE_NAME)['timestamp']
+            $this->adapter->lastModified(static::REMOTE_NAME)['timestamp']
         );
     }
 
@@ -111,7 +111,7 @@ class AdapterReaderTest extends AbstractTestCase
     {
         $this->assertEquals(
             Visibility::PUBLIC,
-            $this->adapter->getVisibility(static::REMOTE_NAME)['visibility']
+            $this->adapter->visibility(static::REMOTE_NAME)['visibility']
         );
     }
 
@@ -121,25 +121,23 @@ class AdapterReaderTest extends AbstractTestCase
 
         $this->assertEquals(
             \file_get_contents(static::REMOTE_FILE),
-            $result['contents']
+            $result
         );
     }
 
     public function testReadShouldReturnFalseWhenSshCommandFails()
     {
+        $this->expectException(UnableToReadFile::class);
         $this->configurator->setPort(0);
         $adapter = $this->factory->createAdapter($this->configurator);
 
-        $result = $adapter->read(static::REMOTE_NAME);
-
-        $this->assertFalse($result);
+        $adapter->read(static::REMOTE_NAME);
     }
 
     public function testReadShouldReturnFalseWhenInvalidPath()
     {
-        $result = $this->adapter->read(static::REMOTE_INVALID_NAME);
-
-        $this->assertFalse($result);
+        $this->expectException(UnableToReadFile::class);
+        $this->adapter->read(static::REMOTE_INVALID_NAME);
     }
 
     public function testListContents()

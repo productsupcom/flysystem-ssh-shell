@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TestsPhuxtilFlysystemSshShell\Acceptance\Adapter;
 
 use League\Flysystem\Config;
+use League\Flysystem\UnableToWriteFile;
 use League\Flysystem\Visibility;
 use TestsPhuxtilFlysystemSshShell\Helper\AbstractTestCase;
 
@@ -52,36 +53,30 @@ class StreamWriterTest extends AbstractTestCase
         $stream = fopen(static::LOCAL_FILE, 'r+');
         $config = new Config();
 
-        $result = $adapter->writeStream(static::REMOTE_NEWPATH_NAME, $stream, $config);
+        $adapter->writeStream(static::REMOTE_NEWPATH_NAME, $stream, $config);
 
         if (is_resource($stream)) {
             fclose($stream);
         }
 
-        $expected = [
-            'type' => 'file',
-            'size' => \filesize(static::LOCAL_FILE),
-            'path' => static::REMOTE_NEWPATH_NAME,
-        ];
-
-        $this->assertEquals($expected, $result);
         $this->assertContent();
     }
 
-    public function testWriteStreamShouldReturnFalseWhenInvalidResource()
+    public function testWriteStreamShouldThrowExceptionWhenInvalidResource()
     {
+        $this->expectException(UnableToWriteFile::class);
         $adapter = $this->factory->createAdapter(
             $this->configurator
         );
 
         $config = new Config();
-        $result = $adapter->writeStream(static::REMOTE_NEWPATH_NAME, false, $config);
-
-        $this->assertFalse($result);
+        $adapter->writeStream(static::REMOTE_NEWPATH_NAME, false, $config);
     }
 
     public function testWriteStreamShouldReturnFalseWhenSshCommandFails()
     {
+        $this->expectException(UnableToWriteFile::class);
+
         $this->configurator->setPort(0);
         $adapter = $this->factory->createAdapter(
             $this->configurator
@@ -90,13 +85,11 @@ class StreamWriterTest extends AbstractTestCase
         $stream = fopen(static::LOCAL_FILE, 'r+');
         $config = new Config();
 
-        $result = $adapter->writeStream(static::REMOTE_NEWPATH_NAME, $stream, $config);
+        $adapter->writeStream(static::REMOTE_NEWPATH_NAME, $stream, $config);
 
         if (is_resource($stream)) {
             fclose($stream);
         }
-
-        $this->assertFalse($result);
     }
 
     public function testUpdateStream()
@@ -110,19 +103,12 @@ class StreamWriterTest extends AbstractTestCase
         $stream = fopen(static::LOCAL_FILE, 'r+');
         $config = new Config();
 
-        $result = $adapter->updateStream(static::REMOTE_NAME, $stream, $config);
+        $adapter->writeStream(static::REMOTE_NAME, $stream, $config);
 
         if (is_resource($stream)) {
             fclose($stream);
         }
 
-        $expected = [
-            'type' => 'file',
-            'size' => \filesize(static::LOCAL_FILE),
-            'path' => static::REMOTE_NAME,
-        ];
-
-        $this->assertEquals($expected, $result);
         $this->assertContent(static::REMOTE_FILE);
     }
 }
