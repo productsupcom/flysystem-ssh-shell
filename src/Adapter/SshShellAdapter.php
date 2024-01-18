@@ -4,14 +4,29 @@ declare(strict_types = 1);
 
 namespace Phuxtil\Flysystem\SshShell\Adapter;
 
+use League\Flysystem\FileAttributes;
+use League\Flysystem\FilesystemAdapter;
 use League\Flysystem\PathPrefixer;
 use League\Flysystem\Config;
+use League\Flysystem\UnableToCopyFile;
+use League\Flysystem\UnableToCreateDirectory;
+use League\Flysystem\UnableToDeleteDirectory;
+use League\Flysystem\UnableToDeleteFile;
+use League\Flysystem\UnableToMoveFile;
+use League\Flysystem\UnableToReadFile;
+use League\Flysystem\UnableToRetrieveMetadata;
+use League\Flysystem\UnableToSetVisibility;
+use League\Flysystem\UnableToWriteFile;
 use League\Flysystem\Visibility;
 use League\MimeTypeDetection\FinfoMimeTypeDetector;
 use Phuxtil\Flysystem\SshShell\Adapter\VisibilityPermission\VisibilityPermissionConverter;
 use Phuxtil\SplFileInfo\VirtualSplFileInfo;
+use function error_clear_last;
+use function error_get_last;
+use function is_dir;
+use function is_file;
 
-class SshShellAdapter
+class SshShellAdapter implements FilesystemAdapter
 {
     protected PathPrefixer $pathPrefix;
 
@@ -32,152 +47,91 @@ class SshShellAdapter
         $this->pathPrefix->stripDirectoryPrefix($prefix);
     }
 
-    public function write(string $path, string $contents, Config $config): array|false
+    public function write(string $path, string $contents, Config $config): void
     {
         $location = $this->pathPrefix->prefixPath($path);
         $size = $this->writer->write($location, $contents);
+
         if ($size === false) {
-            return false;
+            throw UnableToWriteFile::atLocation($path, error_get_last()['message'] ?? '');
         }
 
         $visibility = $this->updatePathVisibility($path, $config);
 
-        $result = [
-            'contents' => $contents,
-            'type' => 'file',
-            'size' => $size,
-            'path' => $path,
-        ];
-
         if ($visibility === false) {
-            return $result;
+            throw UnableToSetVisibility::atLocation($path, error_get_last()['message'] ?? '');
         }
-
-        return array_merge($result, $visibility);
     }
 
-    /**
-     * @param string $path
-     * @param resource|bool $resource
-     * @param Config $config Config object
-     *
-     * @return array|false false on failure file meta data on success
-     */
-    public function writeStream(string $path, $resource, Config $config): array|false
+    public function writeStream(string $path, $resource, Config $config): void
     {
         $location = $this->pathPrefix->prefixPath($path);
         $size = $this->writer->writeStream($location, $resource);
         if ($size === false) {
-            return false;
+            throw UnableToWriteFile::atLocation($path, error_get_last()['message'] ?? '');
         }
 
         $visibility = $this->updatePathVisibility($path, $config);
 
-        $result = [
-            'type' => 'file',
-            'size' => $size,
-            'path' => $path,
-        ];
-
         if ($visibility === false) {
-            return $result;
+            throw UnableToSetVisibility::atLocation($path, error_get_last()['message'] ?? '');
         }
-
-        return array_merge($result, $visibility);
     }
 
-    public function update(string $path, string $contents, Config $config): array|false
-    {
-        $location = $this->pathPrefix->prefixPath($path);
-        $size = $this->writer->update($location, $contents);
-        if ($size === false) {
-            return false;
-        }
-
-        $visibility = $this->updatePathVisibility($path, $config);
-
-        $result = [
-            'contents' => $contents,
-            'type' => 'file',
-            'size' => $size,
-            'path' => $path,
-        ];
-
-        if ($visibility === false) {
-            return $result;
-        }
-
-        return array_merge($result, $visibility);
-    }
-
-    /**
-     * @param string $path
-     * @param resource $resource
-     * @param Config $config Config object
-     *
-     * @return array|false false on failure file meta data on success
-     */
-    public function updateStream(string $path, $resource, Config $config): array|false
-    {
-        return $this->writeStream($path, $resource, $config);
-    }
-
-    public function rename(string $path, string $newPath): bool
+    public function move(string $path, string $newPath, Config $config): void
     {
         $locationPath = $this->pathPrefix->prefixPath($path);
         $locationNewPath = $this->pathPrefix->prefixPath($newPath);
 
-        return $this->writer->rename($locationPath, $locationNewPath);
+        if (!$this->writer->rename($locationPath, $locationNewPath)) {
+            throw UnableToMoveFile::because(error_get_last()['message'] ?? 'unknown reason', $path, $newPath);
+        }
     }
 
-    public function copy(string $path, string $newPath): bool
+    public function copy(string $path, string $newPath, Config $config): void
     {
         $locationPath = $this->pathPrefix->prefixPath($path);
         $locationNewPath = $this->pathPrefix->prefixPath($newPath);
 
-        return $this->writer->copy($locationPath, $locationNewPath);
+        if (!$this->writer->copy($locationPath, $locationNewPath)) {
+            throw UnableToCopyFile::because(error_get_last()['message'] ?? 'unknown', $path, $newPath);
+        }
     }
 
-    public function delete(string $path): bool
+    public function delete(string $path): void
     {
         $location = $this->pathPrefix->prefixPath($path);
 
-        return $this->writer->delete($location);
+        if (!$this->writer->delete($location)) {
+            throw UnableToDeleteFile::atLocation($location, error_get_last()['message'] ?? '');
+        }
     }
 
-    public function deleteDir(string $dirname): bool
+    public function deleteDirectory(string $dirname): void
     {
         $location = $this->pathPrefix->prefixPath($dirname);
 
-        return $this->writer->rmdir($location);
+        if (!$this->writer->rmdir($location)) {
+            throw UnableToDeleteDirectory::atLocation($dirname, error_get_last()['message'] ?? '');
+        }
     }
 
-    public function createDir(string $dirname, Config $config): array|false
+    public function createDirectory(string $dirname, Config $config): void
     {
         $location = $this->pathPrefix->prefixPath($dirname);
         $visibility = $config->get('visibility', Visibility::PUBLIC);
 
         if (!$this->writer->mkdir($location, $visibility)) {
-            return false;
+            throw UnableToCreateDirectory::atLocation($dirname);
         }
-
-        return [
-            'path' => $dirname,
-            'type' => 'dir',
-        ];
     }
 
-    public function setVisibility(string $path, string $visibility): array|false
+    public function setVisibility(string $path, string $visibility): void
     {
         $location = $this->pathPrefix->prefixPath($path);
         if (!$this->writer->setVisibility($location, $visibility, 'file')) {
-            return false;
+            throw UnableToSetVisibility::atLocation($path, error_get_last()['message'] ?? '');
         }
-
-        return [
-            'path' => $path,
-            'visibility' => $visibility,
-        ];
     }
 
     public function has(string $path): array|bool|null
@@ -188,27 +142,16 @@ class SshShellAdapter
         return $metadata->isReadable() && !$metadata->isVirtual();
     }
 
-    /**
-     * ReadResource a file.
-     *
-     * @param string $path
-     *
-     * @return array|false
-     */
-    public function read(string $path): array|false
+    public function read(string $path): string
     {
         $location = $this->pathPrefix->prefixPath($path);
         $contents = $this->reader->read($location);
 
         if ($contents === false) {
-            return false;
+            throw UnableToReadFile::fromLocation($path, error_get_last()['message'] ?? '');
         }
 
-        return [
-            'type' => 'file',
-            'path' => $path,
-            'contents' => $contents,
-        ];
+        return $contents;
     }
 
     public function listContents(string $directory = '', bool $recursive = false): array
@@ -224,23 +167,71 @@ class SshShellAdapter
         return $result;
     }
 
-    public function readStream(string $path): false|array
+    public function readStream(string $path)
     {
         $location = $this->pathPrefix->prefixPath($path);
         $stream = $this->reader->readStream($location);
 
         if ($stream === false) {
-            return false;
+            throw UnableToReadFile::fromLocation($path, error_get_last()['message'] ?? '');
         }
 
-        return [
-            'type' => 'file',
-            'path' => $path,
-            'stream' => $stream,
-        ];
+        return $stream;
     }
 
-    public function getMetadata(string $path): false|array
+
+    public function fileSize(string $path): FileAttributes
+    {
+        $location = $this->pathPrefix->prefixPath($path);
+        error_clear_last();
+
+        if (is_file($location) && ($fileSize = @filesize($location)) !== false) {
+            return new FileAttributes($path, $fileSize);
+        }
+
+        throw UnableToRetrieveMetadata::fileSize($path, error_get_last()['message'] ?? '');
+    }
+
+    public function mimeType(string $path): FileAttributes
+    {
+        $location = $this->pathPrefix->prefixPath($path);
+
+        error_clear_last();
+
+        if ( ! is_file($location)) {
+            throw UnableToRetrieveMetadata::mimeType($location, 'No such file exists.');
+        }
+
+        $mimeType = $this->mimeTypeDetector->detectMimeTypeFromFile($location);
+
+        if ($mimeType === null) {
+            throw UnableToRetrieveMetadata::mimeType($path, error_get_last()['message'] ?? '');
+        }
+
+        return new FileAttributes($path, null, null, null, $mimeType);
+    }
+
+    public function lastModified(string $path): FileAttributes
+    {
+        $location = $this->pathPrefix->prefixPath($path);
+        error_clear_last();
+        $lastModified = @filemtime($location);
+
+        if ($lastModified === false) {
+            throw UnableToRetrieveMetadata::lastModified($path, error_get_last()['message'] ?? '');
+        }
+
+        return new FileAttributes($path, null, null, $lastModified);
+    }
+
+    public function visibility(string $path): FileAttributes
+    {
+        $details = $this->getMetadata($path);
+
+        return new FileAttributes($path, null, $details['visibility']);
+    }
+
+    public function getMetadata($path)
     {
         $location = $this->pathPrefix->prefixPath($path);
         $metadata = $this->reader->getMetadata($location);
@@ -249,32 +240,6 @@ class SshShellAdapter
         }
 
         return $this->prepareMetadataResult($metadata);
-    }
-
-    public function getSize(string $path): false|array
-    {
-        return $this->getMetadata($path);
-    }
-
-    public function getMimetype(string $path): false|array
-    {
-        $location = $this->pathPrefix->prefixPath($path);
-
-        return [
-            'path' => $path,
-            'type' => 'file',
-            'mimetype' => $this->mimeTypeDetector->detectMimeType($location, ''),
-        ];
-    }
-
-    public function getTimestamp(string $path): false|array
-    {
-        return $this->getMetadata($path);
-    }
-
-    public function getVisibility(string $path): false|array
-    {
-        return $this->getMetadata($path);
     }
 
     protected function prepareMetadataResult(VirtualSplFileInfo $metadata): array
@@ -286,11 +251,12 @@ class SshShellAdapter
         return array_merge($this->fileInfoToFilesystemResult($metadata), $result);
     }
 
-    protected function updatePathVisibility(string $path, Config $config): false|array
+    protected function updatePathVisibility(string $path, Config $config): bool
     {
         $visibility = $config->get('visibility');
         if ($visibility) {
-            return $this->setVisibility($path, $visibility);
+            $this->setVisibility($path, $visibility);
+            return true;
         }
 
         return false;
@@ -319,5 +285,19 @@ class SshShellAdapter
         unset($item['pathname']);
 
         return $item;
+    }
+
+    public function fileExists(string $path): bool
+    {
+        $location = $this->pathPrefix->prefixPath($path);
+
+        return is_file($location);
+    }
+
+    public function directoryExists(string $path): bool
+    {
+        $location = $this->pathPrefix->prefixPath($path);
+
+        return is_dir($location);
     }
 }
