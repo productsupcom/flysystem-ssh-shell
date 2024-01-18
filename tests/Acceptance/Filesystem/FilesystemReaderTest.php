@@ -1,11 +1,11 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace TestsPhuxtilFlysystemSshShell\Acceptance\Filesystem;
 
-use League\Flysystem\AdapterInterface;
 use League\Flysystem\Filesystem;
+use League\Flysystem\Visibility;
 use TestsPhuxtilFlysystemSshShell\Helper\AbstractTestCase;
 
 /**
@@ -15,10 +15,7 @@ use TestsPhuxtilFlysystemSshShell\Helper\AbstractTestCase;
  */
 class FilesystemReaderTest extends AbstractTestCase
 {
-    /**
-     * @var \League\Flysystem\Filesystem
-     */
-    protected $filesystem;
+    protected Filesystem $filesystem;
 
     protected function setUp(): void
     {
@@ -29,16 +26,16 @@ class FilesystemReaderTest extends AbstractTestCase
         $this->filesystem = new Filesystem($adapter);
     }
 
-    public function test_has()
+    public function testHas()
     {
-        $has = $this->filesystem->has(static::REMOTE_NAME);
-        $hasNot = $this->filesystem->has(static::REMOTE_NEWPATH);
+        $has = $this->filesystem->fileExists(static::REMOTE_NAME);
+        $hasNot = $this->filesystem->fileExists(static::REMOTE_NEWPATH);
 
         $this->assertTrue($has);
         $this->assertFalse($hasNot);
     }
 
-    public function test_readStream()
+    public function testReadStream()
     {
         $stream = $this->filesystem->readStream(static::REMOTE_NAME);
 
@@ -49,7 +46,7 @@ class FilesystemReaderTest extends AbstractTestCase
         $this->assertEquals($content, \file_get_contents(static::REMOTE_FILE));
     }
 
-    public function test_listContents()
+    public function testListContents()
     {
         $content = $this->filesystem->listContents(static::REMOTE_PATH_NAME, true);
 
@@ -58,64 +55,44 @@ class FilesystemReaderTest extends AbstractTestCase
 
         $fileInfo = $content[1];
 
-        $this->assertEquals($fileInfo['type'], 'file');
-        $this->assertEquals($fileInfo['path'], 'remote.txt');
+        $this->assertEquals('file', $fileInfo['type']);
+        $this->assertEquals('remote.txt', $fileInfo['path']);
         $this->assertNotEmpty($fileInfo['timestamp']);
-        $this->assertEquals($fileInfo['size'], 70);
-        $this->assertEquals($fileInfo['dirname'], '/');
-        $this->assertEquals($fileInfo['basename'], 'remote.txt');
-        $this->assertEquals($fileInfo['extension'], 'txt');
-        $this->assertEquals($fileInfo['filename'], 'remote');
+        $this->assertEquals(70, $fileInfo['size']);
+        $this->assertEquals('/', $fileInfo['dirname']);
+        $this->assertEquals('remote.txt', $fileInfo['basename']);
+        $this->assertEquals('txt', $fileInfo['extension']);
+        $this->assertEquals('remote', $fileInfo['filename']);
     }
 
-    public function test_getMimetype()
+    public function testGetMimetype()
     {
-        $mimeType = $this->filesystem->getMimetype(static::REMOTE_NAME);
+        $mimeType = $this->filesystem->mimeType(static::REMOTE_NAME);
 
         $this->assertEquals('text/plain', $mimeType);
     }
 
-    public function test_getTimestamp()
+    public function testGetTimestamp()
     {
         $expected = time();
         touch(static::REMOTE_FILE, $expected);
 
-        $timestamp = $this->filesystem->getTimestamp(static::REMOTE_NAME);
+        $timestamp = $this->filesystem->lastModified(static::REMOTE_NAME);
 
         $this->assertEquals($expected, $timestamp);
     }
 
-    public function test_getVisibility()
+    public function testGetVisibility()
     {
-        $visibility = $this->filesystem->getVisibility(static::REMOTE_NAME);
+        $visibility = $this->filesystem->visibility(static::REMOTE_NAME);
 
-        $this->assertEquals(AdapterInterface::VISIBILITY_PUBLIC, $visibility);
+        $this->assertEquals(Visibility::PUBLIC, $visibility);
     }
 
-    public function test_getSize()
+    public function testGetSize()
     {
-        $size = $this->filesystem->getSize(static::REMOTE_NAME);
+        $size = $this->filesystem->fileSize(static::REMOTE_NAME);
 
         $this->assertEquals(70, $size);
-    }
-
-    public function test_getMetdata()
-    {
-        $expectedTimestamp = time();
-        touch(static::REMOTE_FILE, $expectedTimestamp);
-
-        $metadata = $this->filesystem->getMetadata(static::REMOTE_NAME);
-
-        $this->assertEquals($expectedTimestamp, $metadata['timestamp']);
-        $this->assertEquals(AdapterInterface::VISIBILITY_PUBLIC, $metadata['visibility']);
-        $this->assertEquals('text/plain', $metadata['mimetype']);
-
-        $this->assertEquals('remote.txt', $metadata['path']);
-        $this->assertEquals('remote', $metadata['filename']);
-        $this->assertEquals('remote.txt', $metadata['basename']);
-        $this->assertEquals('txt', $metadata['extension']);
-        $this->assertEquals(static::REMOTE_FILE, $metadata['realPath']);
-        $this->assertEquals(70, $metadata['size']);
-        $this->assertEquals('0644', $metadata['perms']);
     }
 }

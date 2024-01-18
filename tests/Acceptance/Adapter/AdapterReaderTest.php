@@ -1,12 +1,13 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace TestsPhuxtilFlysystemSshShell\Acceptance\Adapter;
 
-use League\Flysystem\AdapterInterface;
+use League\Flysystem\UnableToReadFile;
+use League\Flysystem\Visibility;
+use Phuxtil\Flysystem\SshShell\Adapter\SshShellAdapter;
 use Phuxtil\SplFileInfo\VirtualSplFileInfo;
-use SplFileInfo;
 use TestsPhuxtilFlysystemSshShell\Helper\AbstractTestCase;
 
 /**
@@ -17,10 +18,8 @@ use TestsPhuxtilFlysystemSshShell\Helper\AbstractTestCase;
  */
 class AdapterReaderTest extends AbstractTestCase
 {
-    /**
-     * @var \Phuxtil\Flysystem\SshShell\Adapter\SshShellAdapter
-     */
-    protected $adapter;
+
+    protected SshShellAdapter $adapter;
 
     protected function setUp(): void
     {
@@ -33,14 +32,14 @@ class AdapterReaderTest extends AbstractTestCase
         $this->setupRemoteFile();
     }
 
-    public function test_has()
+    public function testHas()
     {
         $this->assertTrue(
             $this->adapter->has(static::REMOTE_NAME)
         );
     }
 
-    public function test_getMetadata()
+    public function testGetMetadata()
     {
         $metadata = $this->adapter->getMetadata(static::REMOTE_NAME);
         $expected = [
@@ -61,11 +60,11 @@ class AdapterReaderTest extends AbstractTestCase
             'linkTarget' => -1,
             'writable' => \is_writable(static::REMOTE_FILE),
             'readable' => \is_readable(static::REMOTE_FILE),
-            'executable' => false, //always returns true inside docker container \is_executable(static::REMOTE_FILE),
+            'executable' => false, // always returns true inside docker container \is_executable(static::REMOTE_FILE),
             'file' => \is_file(static::REMOTE_FILE),
             'dir' => \is_dir(static::REMOTE_FILE),
             'link' => \is_link(static::REMOTE_FILE),
-            'visibility' => AdapterInterface::VISIBILITY_PUBLIC,
+            'visibility' => Visibility::PUBLIC,
             'timestamp' => \filemtime(static::REMOTE_FILE),
             'mimetype' => 'text/plain',
             'dirname' => '/',
@@ -77,73 +76,71 @@ class AdapterReaderTest extends AbstractTestCase
         );
     }
 
-    public function test_getMetadata_should_return_false()
+    public function testGetMetadataShouldReturnFalse()
     {
         $metadata = $this->adapter->getMetadata(static::REMOTE_INVALID_NAME);
 
         $this->assertFalse($metadata);
     }
 
-    public function test_getSize()
+    public function testGetSize()
     {
         $this->assertEquals(
             \filesize(static::REMOTE_FILE),
-            $this->adapter->getSize(static::REMOTE_NAME)['size']
+            $this->adapter->fileSize(static::REMOTE_NAME)['size']
         );
     }
 
-    public function test_getMimetype()
+    public function testGetMimetype()
     {
         $this->assertEquals(
             'text/plain',
-            $this->adapter->getMimetype(static::REMOTE_NAME)['mimetype']
+            $this->adapter->mimeType(static::REMOTE_NAME)['mimetype']
         );
     }
 
-    public function test_getTimestamp()
+    public function testGetTimestamp()
     {
         $this->assertEquals(
             filemtime(static::REMOTE_FILE),
-            $this->adapter->getTimestamp(static::REMOTE_NAME)['timestamp']
+            $this->adapter->lastModified(static::REMOTE_NAME)['timestamp']
         );
     }
 
-    public function test_getVisibility()
+    public function testGetVisibility()
     {
         $this->assertEquals(
-            AdapterInterface::VISIBILITY_PUBLIC,
-            $this->adapter->getVisibility(static::REMOTE_NAME)['visibility']
+            Visibility::PUBLIC,
+            $this->adapter->visibility(static::REMOTE_NAME)['visibility']
         );
     }
 
-    public function test_read()
+    public function testRead()
     {
         $result = $this->adapter->read(static::REMOTE_NAME);
 
         $this->assertEquals(
             \file_get_contents(static::REMOTE_FILE),
-            $result['contents']
+            $result
         );
     }
 
-    public function test_read_should_return_false_when_ssh_command_fails()
+    public function testReadShouldReturnFalseWhenSshCommandFails()
     {
+        $this->expectException(UnableToReadFile::class);
         $this->configurator->setPort(0);
         $adapter = $this->factory->createAdapter($this->configurator);
 
-        $result = $adapter->read(static::REMOTE_NAME);
-
-        $this->assertFalse($result);
+        $adapter->read(static::REMOTE_NAME);
     }
 
-    public function test_read_should_return_false_when_invalid_path()
+    public function testReadShouldReturnFalseWhenInvalidPath()
     {
-        $result = $this->adapter->read(static::REMOTE_INVALID_NAME);
-
-        $this->assertFalse($result);
+        $this->expectException(UnableToReadFile::class);
+        $this->adapter->read(static::REMOTE_INVALID_NAME);
     }
 
-    public function test_listContents()
+    public function testListContents()
     {
         $result = $this->adapter->listContents(static::REMOTE_PATH_NAME);
 
@@ -156,7 +153,7 @@ class AdapterReaderTest extends AbstractTestCase
         }
     }
 
-    public function test_listContents_should_return_empty_array_when_ssh_command_fails()
+    public function testListContentsShouldReturnEmptyArrayWhenSshCommandFails()
     {
         $this->configurator->setPort(0);
         $adapter = $this->factory->createAdapter($this->configurator);
@@ -166,7 +163,7 @@ class AdapterReaderTest extends AbstractTestCase
         $this->assertCount(0, $result);
     }
 
-    public function test_listContents_recursively()
+    public function testListContentsRecursively()
     {
         $result = $this->adapter->listContents(static::REMOTE_PATH_NAME, true);
 
@@ -183,14 +180,13 @@ class AdapterReaderTest extends AbstractTestCase
     {
         $octal = substr(sprintf('%o', fileperms($expected->getPathname())), -4);
 
-        //links are resolved by find, however fileperms() and filetype() will return link info
+        // links are resolved by find, however fileperms() and filetype() will return link info
         if ($expected->isLink()) {
-            $linkTargetInfo = new SplFileInfo($expected->getRealPath());
+            $linkTargetInfo = new \SplFileInfo($expected->getRealPath());
             $this->assertEquals($linkTargetInfo->getType(), $info->getType());
             $this->assertEquals($linkTargetInfo->isLink(), $info->isLink());
             $this->assertEquals($expected->getPathname(), $info->getRealPath());
-        }
-        else {
+        } else {
             $this->assertEquals($expected->getType(), $info->getType());
             $this->assertEquals($expected->isLink(), $info->isLink());
             $this->assertEquals($expected->getRealPath(), $info->getRealPath());
@@ -213,6 +209,6 @@ class AdapterReaderTest extends AbstractTestCase
         $this->assertEquals($expected->isDir(), $info->isDir());
         $this->assertEquals($expected->isReadable(), $info->isReadable());
         $this->assertEquals($expected->isWritable(), $info->isWritable());
-        //$this->assertEquals($expected->isExecutable(), $info->isExecutable()); ///always returns true inside docker container \is_executable(static::REMOTE_FILE),
+        // $this->assertEquals($expected->isExecutable(), $info->isExecutable()); ///always returns true inside docker container \is_executable(static::REMOTE_FILE),
     }
 }

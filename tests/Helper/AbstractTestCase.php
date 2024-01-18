@@ -4,7 +4,7 @@ declare(strict_types = 1);
 
 namespace TestsPhuxtilFlysystemSshShell\Helper;
 
-use League\Flysystem\AdapterInterface;
+use League\Flysystem\Visibility;
 use PHPUnit\Framework\TestCase;
 use Phuxtil\Flysystem\SshShell\SshShellConfigurator;
 use Phuxtil\Flysystem\SshShell\SshShellFactory;
@@ -112,11 +112,11 @@ abstract class AbstractTestCase extends TestCase
 
     protected function assertFileResult(
         array $result,
-        string $visisibility = AdapterInterface::VISIBILITY_PUBLIC,
+        string $visibility = Visibility::PUBLIC,
         $permissions = '0644'
     ) {
-        $this->assertEquals($result['visibility'], $visisibility);
-        $this->assertEquals($result['type'], 'file');
+        $this->assertEquals($result['visibility'], $visibility);
+        $this->assertEquals('file', $result['type']);
         $this->assertEquals($result['perms'], $permissions);
 
         $this->assertFalse($result['link']);
@@ -129,11 +129,11 @@ abstract class AbstractTestCase extends TestCase
 
     protected function assertDirResult(
         array $result,
-        string $visisibility = AdapterInterface::VISIBILITY_PUBLIC,
+        string $visibility = Visibility::PUBLIC,
         $permissions = '0755'
     ) {
-        $this->assertEquals($result['visibility'], $visisibility);
-        $this->assertEquals($result['type'], 'dir');
+        $this->assertEquals($result['visibility'], $visibility);
+        $this->assertEquals('dir', $result['type']);
         $this->assertEquals($result['perms'], $permissions);
 
         $this->assertFalse($result['link']);
