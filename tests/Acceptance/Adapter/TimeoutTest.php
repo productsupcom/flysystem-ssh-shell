@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace TestsPhuxtilFlysystemSshShell\Acceptance\Adapter;
 
@@ -13,7 +13,7 @@ use TestsPhuxtilFlysystemSshShell\Helper\AbstractTestCase;
  */
 class TimeoutTest extends AbstractTestCase
 {
-    public function test_timeout_default()
+    public function testTimeoutDefault()
     {
         $adapter = $this->factory->createAdapter(
             $this->configurator
@@ -26,7 +26,7 @@ class TimeoutTest extends AbstractTestCase
         $this->assertEquals('FooBaroo', \file_get_contents(static::REMOTE_NEWPATH_FILE));
     }
 
-    public function test_timeout_disabled_with_0()
+    public function testTimeoutDisabledWith0()
     {
         $this->setupRemoteFile();
 
@@ -43,7 +43,7 @@ class TimeoutTest extends AbstractTestCase
         $this->assertEquals('FooBaroo', \file_get_contents(static::REMOTE_NEWPATH_FILE));
     }
 
-    public function test_timeout_disabled_with_null()
+    public function testTimeoutDisabledWithNull()
     {
         $this->setupRemoteFile();
 

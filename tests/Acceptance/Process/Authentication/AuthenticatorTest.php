@@ -1,13 +1,12 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace TestsPhuxtilFlysystemSshShell\Acceptance\Process\Authentication;
 
-use Phuxtil\Flysystem\SshShell\SshShellConfigurator;
-use Phuxtil\Flysystem\SshShell\Process\Authentication\Authenticator;
 use PHPUnit\Framework\TestCase;
-
+use Phuxtil\Flysystem\SshShell\Process\Authentication\Authenticator;
+use Phuxtil\Flysystem\SshShell\SshShellConfigurator;
 
 /**
  * @group flysystem-ssh-shell
@@ -16,10 +15,10 @@ use PHPUnit\Framework\TestCase;
  */
 class AuthenticatorTest extends TestCase
 {
-    const SSH_USER = \TESTS_SSH_USER;
-    const SSH_HOST = \TESTS_SSH_HOST;
+    public const SSH_USER = \TESTS_SSH_USER;
+    public const SSH_HOST = \TESTS_SSH_HOST;
 
-    public function test_generate_by_config()
+    public function testGenerateByConfig()
     {
         $configurator = (new SshShellConfigurator())
             ->setUser(static::SSH_HOST)
@@ -31,7 +30,7 @@ class AuthenticatorTest extends TestCase
         $this->assertEquals('', $auth);
     }
 
-    public function test_generate_by_private_key()
+    public function testGenerateByPrivateKey()
     {
         $configurator = (new SshShellConfigurator())
             ->setPrivateKey('~/.ssh/id_rsa.data_container');
@@ -42,7 +41,7 @@ class AuthenticatorTest extends TestCase
         $this->assertEquals('-i ~/.ssh/id_rsa.data_container', $auth);
     }
 
-    public function test_generate_by_config_should_throw_exception()
+    public function testGenerateByConfigShouldThrowException()
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Unknown authentication type: invalid');

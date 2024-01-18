@@ -1,10 +1,10 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace TestsPhuxtilFlysystemSshShell\Acceptance\Adapter;
 
-use League\Flysystem\AdapterInterface;
+use League\Flysystem\Visibility;
 use TestsPhuxtilFlysystemSshShell\Helper\AbstractTestCase;
 
 /**
@@ -15,7 +15,7 @@ use TestsPhuxtilFlysystemSshShell\Helper\AbstractTestCase;
  */
 class VisibilityTest extends AbstractTestCase
 {
-    public function test_setVisibility_to_private()
+    public function testSetVisibilityToPrivate()
     {
         $this->setupRemoteFile();
 
@@ -23,17 +23,17 @@ class VisibilityTest extends AbstractTestCase
             $this->configurator
         );
 
-        $result = $adapter->setVisibility(static::REMOTE_NAME, AdapterInterface::VISIBILITY_PRIVATE);
+        $result = $adapter->setVisibility(static::REMOTE_NAME, Visibility::PRIVATE);
 
         $expected = [
             'path' => static::REMOTE_NAME,
-            'visibility' => AdapterInterface::VISIBILITY_PRIVATE
+            'visibility' => Visibility::PRIVATE,
         ];
 
         $this->assertEquals($expected, $result);
     }
 
-    public function test_setVisibility_to_public()
+    public function testSetVisibilityToPublic()
     {
         $this->setupRemoteFile();
 
@@ -41,17 +41,17 @@ class VisibilityTest extends AbstractTestCase
             $this->configurator
         );
 
-        $result = $adapter->setVisibility(static::REMOTE_NAME, AdapterInterface::VISIBILITY_PUBLIC);
+        $result = $adapter->setVisibility(static::REMOTE_NAME, Visibility::PUBLIC);
 
         $expected = [
             'path' => static::REMOTE_NAME,
-            'visibility' => AdapterInterface::VISIBILITY_PUBLIC
+            'visibility' => Visibility::PUBLIC,
         ];
 
         $this->assertEquals($expected, $result);
     }
 
-    public function test_setVisibility_invalid()
+    public function testSetVisibilityInvalid()
     {
         $this->setupRemoteFile();
 
@@ -64,7 +64,7 @@ class VisibilityTest extends AbstractTestCase
         $this->assertFalse($result);
     }
 
-    public function test_setVisibility_invalid_path()
+    public function testSetVisibilityInvalidPath()
     {
         $this->setupRemoteFile();
 
@@ -72,7 +72,7 @@ class VisibilityTest extends AbstractTestCase
             $this->configurator
         );
 
-        $result = $adapter->setVisibility(static::REMOTE_INVALID_NAME, AdapterInterface::VISIBILITY_PUBLIC);
+        $result = $adapter->setVisibility(static::REMOTE_INVALID_NAME, Visibility::PUBLIC);
 
         $this->assertFalse($result);
     }

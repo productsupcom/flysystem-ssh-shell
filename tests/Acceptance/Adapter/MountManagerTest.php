@@ -1,11 +1,12 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace TestsPhuxtilFlysystemSshShell\Acceptance\Adapter;
 
-use League\Flysystem\Adapter\Local;
 use League\Flysystem\Filesystem;
+use League\Flysystem\FilesystemException;
+use League\Flysystem\Local\LocalFilesystemAdapter;
 use League\Flysystem\MountManager;
 use TestsPhuxtilFlysystemSshShell\Helper\AbstractTestCase;
 
@@ -17,10 +18,7 @@ use TestsPhuxtilFlysystemSshShell\Helper\AbstractTestCase;
  */
 class MountManagerTest extends AbstractTestCase
 {
-    /**
-     * @var \League\Flysystem\MountManager
-     */
-    protected $mountManager;
+    protected MountManager $mountManager;
 
     protected function setUp(): void
     {
@@ -30,7 +28,7 @@ class MountManagerTest extends AbstractTestCase
             $this->configurator
         );
 
-        $localAdapter = new Local(
+        $localAdapter = new LocalFilesystemAdapter(
             static::REMOTE_PATH
         );
 
@@ -42,12 +40,12 @@ class MountManagerTest extends AbstractTestCase
         );
     }
 
-    public function test_has()
+    public function testHas()
     {
         $this->setupRemoteFile();
 
-        $hasLocal = $this->mountManager->has('local://' . static::REMOTE_NAME);
-        $hasSsh = $this->mountManager->has('ssh://' . static::REMOTE_NAME);
+        $hasLocal = $this->mountManager->has('local://'.static::REMOTE_NAME);
+        $hasSsh = $this->mountManager->has('ssh://'.static::REMOTE_NAME);
 
         $this->assertTrue($hasLocal);
         $this->assertTrue($hasSsh);
@@ -55,27 +53,28 @@ class MountManagerTest extends AbstractTestCase
 
     /**
      * @return void
-     * @throws \League\Flysystem\FileExistsException
+     *
+     * @throws FilesystemException
      */
-    public function test_copy()
+    public function testCopy()
     {
         $this->setupRemoteFile();
 
         $this->mountManager->copy(
-            'ssh://' . static::REMOTE_NAME,
-            'local://' . static::REMOTE_NEWPATH_NAME
+            'ssh://'.static::REMOTE_NAME,
+            'local://'.static::REMOTE_NEWPATH_NAME
         );
 
         $this->assertContent();
     }
 
-    public function test_move()
+    public function testMove()
     {
         $this->setupRemoteFile();
 
         $this->mountManager->move(
-            'ssh://' . static::REMOTE_NAME,
-            'local://' . static::REMOTE_NEWPATH_NAME
+            'ssh://'.static::REMOTE_NAME,
+            'local://'.static::REMOTE_NEWPATH_NAME
         );
 
         $this->assertContent();

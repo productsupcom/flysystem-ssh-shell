@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace TestsPhuxtilFlysystemSshShell\Acceptance\Adapter;
 
@@ -14,7 +14,7 @@ use TestsPhuxtilFlysystemSshShell\Helper\AbstractTestCase;
  */
 class StreamReaderTest extends AbstractTestCase
 {
-    public function test_readStream()
+    public function testReadStream()
     {
         $this->setupRemoteFile();
 
@@ -28,5 +28,4 @@ class StreamReaderTest extends AbstractTestCase
         $this->assertEquals($result['type'], 'file');
         $this->assertTrue(\is_resource($result['stream']));
     }
-
 }

@@ -1,11 +1,11 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace TestsPhuxtilFlysystemSshShell\Acceptance\Adapter;
 
-use League\Flysystem\AdapterInterface;
 use League\Flysystem\Config;
+use League\Flysystem\Visibility;
 use TestsPhuxtilFlysystemSshShell\Helper\AbstractTestCase;
 
 /**
@@ -16,14 +16,14 @@ use TestsPhuxtilFlysystemSshShell\Helper\AbstractTestCase;
  */
 class AdapterWriterTest extends AbstractTestCase
 {
-    public function test_writeStream_should_set_visibility()
+    public function testWriteStreamShouldSetVisibility()
     {
         $adapter = $this->factory->createAdapter(
             $this->configurator
         );
 
         $config = new Config();
-        $config->set('visibility', AdapterInterface::VISIBILITY_PRIVATE);
+        $config->extend(['visibility' => Visibility::PRIVATE]);
 
         $result = $adapter->write(static::REMOTE_NEWPATH_NAME, 'FooBaroo', $config);
 
@@ -32,7 +32,7 @@ class AdapterWriterTest extends AbstractTestCase
             'type' => 'file',
             'size' => strlen('FooBaroo'),
             'path' => static::REMOTE_NEWPATH_NAME,
-            'visibility' => AdapterInterface::VISIBILITY_PRIVATE,
+            'visibility' => Visibility::PRIVATE,
         ];
 
         $this->assertEquals($expected, $result);
@@ -40,7 +40,7 @@ class AdapterWriterTest extends AbstractTestCase
         $this->assertFileExists(static::REMOTE_NEWPATH_FILE);
     }
 
-    public function test_write_should_create_path()
+    public function testWriteShouldCreatePath()
     {
         $adapter = $this->factory->createAdapter(
             $this->configurator
@@ -61,7 +61,7 @@ class AdapterWriterTest extends AbstractTestCase
         $this->assertFileExists(static::REMOTE_NEWPATH_FILE);
     }
 
-    public function test_write_should_create_path_with_private_key_auth()
+    public function testWriteShouldCreatePathWithPrivateKeyAuth()
     {
         $this->configurator->setPrivateKey('~/.ssh/id_rsa.data_container');
 
@@ -84,7 +84,7 @@ class AdapterWriterTest extends AbstractTestCase
         $this->assertFileExists(static::REMOTE_NEWPATH_FILE);
     }
 
-    public function test_write_should_return_false()
+    public function testWriteShouldReturnFalse()
     {
         $this->configurator->setPort(0);
         $adapter = $this->factory->createAdapter(
@@ -97,7 +97,7 @@ class AdapterWriterTest extends AbstractTestCase
         $this->assertFalse($result);
     }
 
-    public function test_update_should_not_change_meta()
+    public function testUpdateShouldNotChangeMeta()
     {
         $this->setupRemoteFile();
 
@@ -120,7 +120,7 @@ class AdapterWriterTest extends AbstractTestCase
         $this->assertFileExists(static::REMOTE_FILE);
     }
 
-    public function test_update_should_change_visibility()
+    public function testUpdateShouldChangeVisibility()
     {
         $this->setupRemoteFile();
 
@@ -129,7 +129,7 @@ class AdapterWriterTest extends AbstractTestCase
         );
 
         $config = new Config();
-        $config->set('visibility', AdapterInterface::VISIBILITY_PRIVATE);
+        $config->extend(['visibility' => Visibility::PRIVATE]);
         $result = $adapter->update(static::REMOTE_NAME, 'FooBaroo', $config);
 
         $expected = [
@@ -137,7 +137,7 @@ class AdapterWriterTest extends AbstractTestCase
             'type' => 'file',
             'size' => strlen('FooBaroo'),
             'path' => static::REMOTE_NAME,
-            'visibility' => AdapterInterface::VISIBILITY_PRIVATE,
+            'visibility' => Visibility::PRIVATE,
         ];
 
         $this->assertEquals($expected, $result);
@@ -145,7 +145,7 @@ class AdapterWriterTest extends AbstractTestCase
         $this->assertFileExists(static::REMOTE_FILE);
     }
 
-    public function test_update_should_return_false_when_path_does_not_exist()
+    public function testUpdateShouldReturnFalseWhenPathDoesNotExist()
     {
         $this->assertFileDoesNotExist(static::REMOTE_INVALID_PATH);
 
@@ -160,7 +160,7 @@ class AdapterWriterTest extends AbstractTestCase
         $this->assertFileDoesNotExist(static::REMOTE_INVALID_PATH);
     }
 
-    public function test_mkdir()
+    public function testMkdir()
     {
         $adapter = $this->factory->createAdapter(
             $this->configurator
@@ -178,7 +178,7 @@ class AdapterWriterTest extends AbstractTestCase
         $this->assertDirectoryExists(static::REMOTE_NEWPATH);
     }
 
-    public function test_copy()
+    public function testCopy()
     {
         $this->setupRemoteFile();
         $this->assertFileDoesNotExist(static::REMOTE_NEWPATH_FILE);
@@ -193,7 +193,7 @@ class AdapterWriterTest extends AbstractTestCase
         $this->assertFileExists(static::REMOTE_NEWPATH_FILE);
     }
 
-    public function test_copy_should_return_false_when_ssh_command_fails()
+    public function testCopyShouldReturnFalseWhenSshCommandFails()
     {
         $this->setupRemoteFile();
         $this->assertFileDoesNotExist(static::REMOTE_NEWPATH_FILE);
@@ -209,7 +209,7 @@ class AdapterWriterTest extends AbstractTestCase
         $this->assertFileDoesNotExist(static::REMOTE_NEWPATH_FILE);
     }
 
-    public function test_rename()
+    public function testRename()
     {
         $this->setupRemoteFile();
 
@@ -228,7 +228,7 @@ class AdapterWriterTest extends AbstractTestCase
         $this->assertFileDoesNotExist($fileToMove);
     }
 
-    public function test_rename_should_return_false_when_ssh_process_fails()
+    public function testRenameShouldReturnFalseWhenSshProcessFails()
     {
         $fileToMove = $this->setupRemoteTempFile();
         $fileToMoveName = \basename($fileToMove);
@@ -247,7 +247,7 @@ class AdapterWriterTest extends AbstractTestCase
         $this->assertFileDoesNotExist(static::REMOTE_NEWPATH_FILE);
     }
 
-    public function test_delete()
+    public function testDelete()
     {
         $fileToMove = $this->setupRemoteTempFile();
         $fileToMoveName = \basename($fileToMove);
@@ -262,7 +262,7 @@ class AdapterWriterTest extends AbstractTestCase
         $this->assertFileDoesNotExist($fileToMoveName);
     }
 
-    public function test_deleteDir()
+    public function testDeleteDir()
     {
         $dir = $this->setupRemoteTempDir();
         $dirName = \basename($dir);

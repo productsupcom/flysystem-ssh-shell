@@ -1,11 +1,11 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace TestsPhuxtilFlysystemSshShell\Acceptance\Adapter;
 
-use League\Flysystem\AdapterInterface;
 use League\Flysystem\Config;
+use League\Flysystem\Visibility;
 use TestsPhuxtilFlysystemSshShell\Helper\AbstractTestCase;
 
 /**
@@ -16,7 +16,7 @@ use TestsPhuxtilFlysystemSshShell\Helper\AbstractTestCase;
  */
 class StreamWriterTest extends AbstractTestCase
 {
-    public function test_writeStream_should_set_visibility()
+    public function testWriteStreamShouldSetVisibility()
     {
         $adapter = $this->factory->createAdapter(
             $this->configurator
@@ -24,13 +24,13 @@ class StreamWriterTest extends AbstractTestCase
 
         $stream = fopen(static::LOCAL_FILE, 'r+');
         $config = new Config();
-        $config->set('visibility', AdapterInterface::VISIBILITY_PRIVATE);
+        $config->extend(['visibility' => Visibility::PRIVATE]);
 
         $expected = [
             'type' => 'file',
             'size' => \filesize(static::LOCAL_FILE),
             'path' => static::REMOTE_NEWPATH_NAME,
-            'visibility' => AdapterInterface::VISIBILITY_PRIVATE,
+            'visibility' => Visibility::PRIVATE,
         ];
 
         $result = $adapter->writeStream(static::REMOTE_NEWPATH_NAME, $stream, $config);
@@ -43,7 +43,7 @@ class StreamWriterTest extends AbstractTestCase
         $this->assertContent();
     }
 
-    public function test_writeStream_should_create_path()
+    public function testWriteStreamShouldCreatePath()
     {
         $adapter = $this->factory->createAdapter(
             $this->configurator
@@ -61,14 +61,14 @@ class StreamWriterTest extends AbstractTestCase
         $expected = [
             'type' => 'file',
             'size' => \filesize(static::LOCAL_FILE),
-            'path' => static::REMOTE_NEWPATH_NAME
+            'path' => static::REMOTE_NEWPATH_NAME,
         ];
 
         $this->assertEquals($expected, $result);
         $this->assertContent();
     }
 
-    public function test_writeStream_should_return_false_when_invalid_resource()
+    public function testWriteStreamShouldReturnFalseWhenInvalidResource()
     {
         $adapter = $this->factory->createAdapter(
             $this->configurator
@@ -80,7 +80,7 @@ class StreamWriterTest extends AbstractTestCase
         $this->assertFalse($result);
     }
 
-    public function test_writeStream_should_return_false_when_ssh_command_fails()
+    public function testWriteStreamShouldReturnFalseWhenSshCommandFails()
     {
         $this->configurator->setPort(0);
         $adapter = $this->factory->createAdapter(
@@ -99,7 +99,7 @@ class StreamWriterTest extends AbstractTestCase
         $this->assertFalse($result);
     }
 
-    public function test_updateStream()
+    public function testUpdateStream()
     {
         $this->setupRemoteFile();
 
@@ -119,7 +119,7 @@ class StreamWriterTest extends AbstractTestCase
         $expected = [
             'type' => 'file',
             'size' => \filesize(static::LOCAL_FILE),
-            'path' => static::REMOTE_NAME
+            'path' => static::REMOTE_NAME,
         ];
 
         $this->assertEquals($expected, $result);

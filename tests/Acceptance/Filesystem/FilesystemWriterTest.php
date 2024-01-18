@@ -1,13 +1,12 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace TestsPhuxtilFlysystemSshShell\Acceptance\Filesystem;
 
-use League\Flysystem\AdapterInterface;
 use League\Flysystem\Filesystem;
+use League\Flysystem\Visibility;
 use TestsPhuxtilFlysystemSshShell\Helper\AbstractTestCase;
-
 
 /**
  * @group flysystem-ssh-shell
@@ -16,10 +15,7 @@ use TestsPhuxtilFlysystemSshShell\Helper\AbstractTestCase;
  */
 class FilesystemWriterTest extends AbstractTestCase
 {
-    /**
-     * @var \League\Flysystem\Filesystem
-     */
-    protected $filesystem;
+    protected Filesystem $filesystem;
 
     protected function setUp(): void
     {
@@ -30,123 +26,98 @@ class FilesystemWriterTest extends AbstractTestCase
         $this->filesystem = new Filesystem($adapter);
     }
 
-    public function test_write()
+    public function testWrite()
     {
-        $result = $this->filesystem->write(static::REMOTE_NEWPATH_NAME, 'Lorem Ipsum');
+        $this->filesystem->write(static::REMOTE_NEWPATH_NAME, 'Lorem Ipsum');
 
-        $this->assertTrue($result);
         $this->assertFileExists(static::REMOTE_NEWPATH_FILE);
         $this->assertEquals('Lorem Ipsum', \file_get_contents(static::REMOTE_NEWPATH_FILE));
     }
 
-    public function test_writeStream()
+    public function testWriteStream()
     {
         $stream = \fopen(static::LOCAL_FILE, 'r');
 
-        $result = $this->filesystem->writeStream(static::REMOTE_NEWPATH_NAME, $stream);
+        $this->filesystem->writeStream(static::REMOTE_NEWPATH_NAME, $stream);
 
-        $this->assertTrue($result);
         $this->assertFileExists(static::REMOTE_NEWPATH_FILE);
         $this->assertEquals(\file_get_contents(static::LOCAL_FILE), \file_get_contents(static::REMOTE_NEWPATH_FILE));
     }
 
-    public function test_put()
+    public function testPut()
     {
-        $result = $this->filesystem->put(static::REMOTE_NAME, 'Lorem Ipsum');
+        $this->filesystem->write(static::REMOTE_NAME, 'Lorem Ipsum');
 
-        $this->assertTrue($result);
         $this->assertFileExists(static::REMOTE_FILE);
         $this->assertEquals('Lorem Ipsum', \file_get_contents(static::REMOTE_FILE));
     }
 
-    public function test_putStream()
+    public function testPutStream()
     {
         $stream = \fopen(static::LOCAL_FILE, 'r');
 
-        $result = $this->filesystem->putStream(static::REMOTE_NAME, $stream);
+        $this->filesystem->writeStream(static::REMOTE_NAME, $stream);
 
-        $this->assertTrue($result);
         $this->assertFileExists(static::REMOTE_FILE);
         $this->assertEquals(\file_get_contents(static::LOCAL_FILE), \file_get_contents(static::REMOTE_FILE));
     }
 
-    public function test_readAndDelete()
+    public function testUpdate()
     {
-        $content = $this->filesystem->readAndDelete(static::REMOTE_NAME);
+        $this->filesystem->write(static::REMOTE_NAME, 'Lorem Ipsum');
 
-        $this->assertFileDoesNotExist(static::REMOTE_FILE);
-        $this->assertEquals($content, \file_get_contents(static::LOCAL_FILE));
-    }
-
-    public function test_update()
-    {
-        $result = $this->filesystem->update(static::REMOTE_NAME, 'Lorem Ipsum');
-
-        $this->assertTrue($result);
         $this->assertFileExists(static::REMOTE_FILE);
         $this->assertEquals('Lorem Ipsum', \file_get_contents(static::REMOTE_FILE));
     }
 
-    public function test_updateStream()
+    public function testUpdateStream()
     {
         $stream = \fopen(static::LOCAL_FILE, 'r');
 
-        $result = $this->filesystem->updateStream(static::REMOTE_NAME, $stream);
+        $this->filesystem->writeStream(static::REMOTE_NAME, $stream);
 
-        $this->assertTrue($result);
         $this->assertFileExists(static::REMOTE_FILE);
         $this->assertEquals(\file_get_contents(static::LOCAL_FILE), \file_get_contents(static::REMOTE_FILE));
     }
 
-    public function test_rename()
+    public function testRename()
     {
-        $result = $this->filesystem->rename(static::REMOTE_NAME, static::REMOTE_NEWPATH_NAME);
+        $this->filesystem->move(static::REMOTE_NAME, static::REMOTE_NEWPATH_NAME);
 
-        $this->assertTrue($result);
         $this->assertFileDoesNotExist(static::REMOTE_FILE);
         $this->assertFileExists(static::REMOTE_NEWPATH_FILE);
     }
 
-    public function test_copy()
+    public function testCopy()
     {
-        $result = $this->filesystem->copy(static::REMOTE_NAME, static::REMOTE_NEWPATH_NAME);
-
-        $this->assertTrue($result);
+        $this->filesystem->copy(static::REMOTE_NAME, static::REMOTE_NEWPATH_NAME);
         $this->assertFileExists(static::REMOTE_NEWPATH_FILE);
     }
 
-    public function test_delete()
+    public function testDelete()
     {
-        $result = $this->filesystem->delete(static::REMOTE_NAME);
-
-        $this->assertTrue($result);
+        $this->filesystem->delete(static::REMOTE_NAME);
         $this->assertFileDoesNotExist(static::REMOTE_FILE);
     }
 
-    public function test_deleteDir()
+    public function testDeleteDir()
     {
-        $this->filesystem->createDir('/newpath/');
-        $result = $this->filesystem->deleteDir('/newpath/');
+        $this->filesystem->createDirectory('/newpath/');
+        $this->filesystem->deleteDirectory('/newpath/');
 
-        $this->assertTrue($result);
         $this->assertDirectoryDoesNotExist(static::REMOTE_NEWPATH);
     }
 
-    public function test_createDir()
+    public function testCreateDir()
     {
-        $result = $this->filesystem->createDir('/newpath/');
-
-        $this->assertTrue($result);
+        $this->filesystem->createDirectory('/newpath/');
         $this->assertDirectoryExists(static::REMOTE_NEWPATH);
     }
 
-    public function test_setVisibility()
+    public function testSetVisibility()
     {
-        $result = $this->filesystem->setVisibility(static::REMOTE_NAME, AdapterInterface::VISIBILITY_PRIVATE);
-
-        $visibility = $this->filesystem->getVisibility(static::REMOTE_NAME);
-
-        $this->assertTrue($result);
-        $this->assertEquals(AdapterInterface::VISIBILITY_PRIVATE, $visibility);
+        $this->filesystem->setVisibility(static::REMOTE_NAME, Visibility::PRIVATE);
+        $visibility = $this->filesystem->visibility(static::REMOTE_NAME);
+        $this->assertEquals(Visibility::PRIVATE, $visibility);
     }
 }
